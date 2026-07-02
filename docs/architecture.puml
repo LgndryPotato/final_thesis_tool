@@ -1,0 +1,73 @@
+@startuml
+' --- C4 Styling Settings ---
+skinparam defaultTextAlignment center
+skinparam wrapWidth 200
+skinparam maxMessageSize 150
+
+skinparam actor {
+    BackgroundColor #08427B
+    BorderColor #052E56
+    FontColor white
+}
+
+skinparam rectangle {
+    BackgroundColor #85BBF0
+    BorderColor #78A8D8
+    FontColor black
+    RoundCorner 10
+}
+
+skinparam database {
+    BackgroundColor #999999
+    BorderColor #777777
+    FontColor white
+}
+
+skinparam package {
+    BackgroundColor white
+    BorderColor #444444
+    FontColor #444444
+    BorderStyle dashed
+}
+
+skinparam arrow {
+    Color #666666
+    FontColor #666666
+}
+
+' --- Elements ---
+title Component Diagram for ONNX Backdooring Framework
+
+actor "ML Engineer [Person]" as user
+
+package "ONNX Transformation Framework" <<Container>> {
+    rectangle "==CLI / API Interface\n<size:12>[Component: Python]</size>\n\nProvides entry points for users to configure standard backdoor injections." as cli
+    
+    rectangle "==Model Parser\n<size:12>[Component: Python / ONNX API]</size>\n\nLoads the raw .onnx file and converts it to an internal manipulatable graph." as parser
+    
+    rectangle "==Transformation Engine\n<size:12>[Component: Python]</size>\n\nCore orchestrator. Iterates through the graph applying requested payloads." as engine
+    
+    rectangle "==Transformation & Payload Library\n<size:12>[Component: Python]</size>\n\nCollection of modular passes (e.g., optimizations, watermarks, backdoor injections)." as passes
+    
+    rectangle "==Audit & Exploit Tracker\n<size:12>[Component: Python]</size>\n\nListens to Engine. Logs backdoor trigger/target metadata." as auditor
+    
+    rectangle "==Model Serializer\n<size:12>[Component: Python / ONNX API]</size>\n\nValidates the modified graph and exports it back to a compliant .onnx file." as serializer
+    
+    rectangle "==Report Generator\n<size:12>[Component: Python]</size>\n\nCompiles logs into threat artifacts (JSON, HTML)." as reporter
+}
+
+database "==File System\n<size:12>[External System]</size>\n\nLocal or cloud storage (S3) for input/output files." as file_system
+
+' --- Relationships ---
+user -down-> cli : Configures pipeline & executes via
+cli -down-> parser : Initiates parsing
+parser -left-> file_system : Reads input model from
+parser -down-> engine : Passes in-memory graph
+engine -right-> passes : Invokes payload from
+engine -down-> auditor : Dispatches graph diff payload data
+engine -down-> serializer : Passes final transformed graph
+auditor -down-> reporter : Provides immutable change logs to
+serializer -down-> file_system : Writes backdoored model to
+reporter -down-> file_system : Writes audit report to
+
+@enduml
